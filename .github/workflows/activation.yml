@@ -1,5 +1,10 @@
 name: Acquire activation file
-on: [push]
+
+# Controls when the action will run. 
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+  
 jobs:
   activation:
     name: Request manual activation file 🔑
