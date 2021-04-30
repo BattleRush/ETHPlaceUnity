@@ -55,7 +55,7 @@ jobs:
           recursive: true
           atomicPut: true
           concurrency: 4
-          local: build
+          local: build/WebGL/WebGL/
           remote: ${{ secrets.REMOTE_TARGET }}
           host: ${{ secrets.REMOTE_HOST }}
           username: ${{ secrets.REMOTE_USER }}
