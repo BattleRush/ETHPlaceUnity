@@ -54,7 +54,7 @@ jobs:
           recursive: true
           atomicPut: true
           concurrency: 4
-          local: /home/runner/work/ETH-DINFK-Bot/ETH-DINFK-Bot/deploy/
+          local: /github/workspace/Temp/StagingArea/Data/Output/
           remote: ${{ secrets.REMOTE_TARGET }}
           host: ${{ secrets.REMOTE_HOST }}
           username: ${{ secrets.REMOTE_USER }}
