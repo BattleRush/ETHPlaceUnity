@@ -43,6 +43,7 @@ jobs:
       # Build
       - name: Build project
         uses: game-ci/unity-builder@v2
+        id: buildStep
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         with:
@@ -54,7 +55,7 @@ jobs:
           recursive: true
           atomicPut: true
           concurrency: 4
-          local: /github/workspace/Temp/StagingArea/Data/Output/
+          local: ${{ steps.buildStep.outputs.outputName }}
           remote: ${{ secrets.REMOTE_TARGET }}
           host: ${{ secrets.REMOTE_HOST }}
           username: ${{ secrets.REMOTE_USER }}
