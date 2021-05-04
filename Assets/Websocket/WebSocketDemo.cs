@@ -397,8 +397,8 @@ public class WebSocketDemo : MonoBehaviour
 
         // Create WebSocket instance
 
-        
-        WS = WebSocketFactory.CreateInstance("wss://place.battlerush.dev:9000/place");
+
+        WS = WebSocketFactory.CreateInstance("wss://websocket.battlerush.dev:9000/place");
         //WS = WebSocketFactory.CreateInstance("ws://52.142.4.222:9000/place"); // TODO config
         //WS = WebSocketFactory.CreateInstance("ws://127.0.0.1:9000/place");
         //WS = ws;
@@ -521,6 +521,8 @@ public class WebSocketDemo : MonoBehaviour
             });
             Debug.Log("WS error: " + errMsg);
         };
+
+
 
         // Add OnClose event listener
         WS.OnClose += (WebSocketCloseCode code) =>
