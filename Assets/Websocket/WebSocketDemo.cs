@@ -4,7 +4,7 @@ using System.Text;
 using UnityEngine;
 
 // Use plugin namespace
-using HybridWebSocket;
+//using HybridWebSocket;
 using System;
 using System.Linq;
 using System.Threading;
@@ -14,6 +14,8 @@ using Assets.Websocket;
 using UnityEngine.UI;
 using Assets.Data;
 using System.Net;
+using NetCoreServer;
+using System.Security.Authentication;
 
 public class WebSocketDemo : MonoBehaviour
 {
@@ -43,7 +45,7 @@ public class WebSocketDemo : MonoBehaviour
     private int CurrentChunk = 0;
     private bool LoadingChunks = false;
 
-    private static WebSocket WS;
+    //private static WebSocket WS;
     public Text PixelCount;
 
     private int ChunkSize = -1;
@@ -214,7 +216,7 @@ public class WebSocketDemo : MonoBehaviour
                         request[1] = userIdBytes[0];
                         request[2] = userIdBytes[1];
 
-                        WS.Send(request);
+                        socketClient.Send(request);
                     }
                     else
                     {
@@ -347,7 +349,7 @@ public class WebSocketDemo : MonoBehaviour
                     request[1] = newChunkIdBytes[0];
                     request[2] = newChunkIdBytes[1];
 
-                    WS.Send(request);
+                    socketClient.Send(request);
                 }
                 catch (Exception ex)
                 {
@@ -384,6 +386,9 @@ public class WebSocketDemo : MonoBehaviour
         }
     }
 
+    private IUnitySocketClient socketClient;
+    // Buffer will be used for sending and receiving to avoid creating garbage
+    private byte[] buffer;
 
     void Start()
     {
@@ -398,13 +403,121 @@ public class WebSocketDemo : MonoBehaviour
         // Create WebSocket instance
 
 
-        WS = WebSocketFactory.CreateInstance("wss://websocket.battlerush.dev:9000/place");
+        try
+        {
+
+
+            if (socketClient != null && (socketClient.IsConnected || socketClient.IsConnecting))
+            {
+                socketClient = null;
+            }
+
+            var context = new SslContext(SslProtocols.Tls12);
+
+            //socketClient = new UnitySslClient(context, "websocket.battlerush.dev", 9000);
+            //socketClient = new UnitySslClient(context, "192.33.91.140", 9000);
+            socketClient = new UnityTcpClient("127.0.0.1", 9000);
+            buffer = new byte[socketClient.OptionReceiveBufferSize];
+
+            socketClient.OnConnectedEvent += SocketClient_OnConnectedEvent;
+            socketClient.OnDisconnectedEvent += SocketClient_OnDisconnectedEvent;
+            socketClient.OnErrorEvent += SocketClient_OnErrorEvent;
+            socketClient.Connect();
+
+        }
+        catch(Exception ex)
+        {
+
+        }
+
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        //WS = WebSocketFactory.CreateInstance("wss://websocket.battlerush.dev:9000/place");
         //WS = WebSocketFactory.CreateInstance("ws://52.142.4.222:9000/place"); // TODO config
         //WS = WebSocketFactory.CreateInstance("ws://127.0.0.1:9000/place");
         //WS = ws;
 
         // Add OnOpen event listener
-        WS.OnOpen += () =>
+        /*WS.OnOpen += () =>
         {
             Debug.Log("WS connected!");
             Debug.Log("WS state: " + WS.GetState().ToString());
@@ -436,12 +549,12 @@ public class WebSocketDemo : MonoBehaviour
             WS.Send(new byte[1] { (byte)MessageEnum.TotalPixelCount_Request });
 
 
-        };
+        };*/
 
         // Add OnMessage event listener
-        WS.OnMessage += (byte[] msg) =>
+        /*WS.OnMessage += (byte[] msg) =>
         {
-            try
+          /*  try
             {
                 MessageCount++;
 
@@ -506,13 +619,13 @@ public class WebSocketDemo : MonoBehaviour
             catch (Exception ex)
             {
                 Debug.LogError("Error on message: " + ex.Message);
-            }
+            }*/
 
-        };
+        //};
 
 
         // Add OnError event listener
-        WS.OnError += (string errMsg) =>
+        /*WS.OnError += (string errMsg) =>
         {
             MainThreadWorker.Instance.AddAction(() =>
             {
@@ -520,12 +633,12 @@ public class WebSocketDemo : MonoBehaviour
                 WebsocketStatusText.color = Color.red;
             });
             Debug.Log("WS error: " + errMsg);
-        };
+        };*/
 
 
 
         // Add OnClose event listener
-        WS.OnClose += (WebSocketCloseCode code) =>
+       /* WS.OnClose += (WebSocketCloseCode code) =>
         {
             MainThreadWorker.Instance.AddAction(() =>
             {
@@ -537,13 +650,148 @@ public class WebSocketDemo : MonoBehaviour
         };
 
         // Connect to the server
-        WS.Connect();
+        WS.Connect();*/
+    }
+    /*public override void OnWsConnecting(HttpRequest request)
+    {
+        request.SetBegin("GET", "/place");
+        request.SetHeader("Host", "localhost");
+        request.SetHeader("Origin", "http://localhost");
+        request.SetHeader("Upgrade", "websocket");
+        request.SetHeader("Connection", "Upgrade");
+        request.SetHeader("Sec-WebSocket-Key", Convert.ToBase64String(WsNonce));
+        request.SetHeader("Sec-WebSocket-Protocol", "chat, superchat");
+        request.SetHeader("Sec-WebSocket-Version", "13");
+    }*/
+    private void SocketClient_OnErrorEvent(System.Net.Sockets.SocketError obj)
+    {
+        Debug.LogError($"{socketClient.GetType()} caught an error with code {obj}");
+
+
+        MainThreadWorker.Instance.AddAction(() =>
+        {
+            WebsocketStatusText.text = $"WS: Error ({obj})";
+            WebsocketStatusText.color = Color.red;
+        });
+        Debug.Log("WS error: " + obj.ToString());
+
+    }
+
+    private void SocketClient_OnDisconnectedEvent()
+    {
+        Debug.Log($"{socketClient.GetType()} disconnected a session with Id {socketClient.Id}");
+        MainThreadWorker.Instance.AddAction(() =>
+        {
+            WebsocketStatusText.text = $"WS: Disconnected";
+            WebsocketStatusText.color = Color.red;
+            ReconnectButton.gameObject.SetActive(true);
+        });
+        Debug.Log("WS closed");
+    }
+
+    private void SocketClient_OnConnectedEvent()
+    {
+        Debug.Log($"{socketClient.GetType()} connected a new session with Id {socketClient.Id}");
+
+        Debug.Log("WS connected!");
+        Debug.Log("WS state: " + socketClient.GetType().ToString());
+
+        MainThreadWorker.Instance.AddAction(() =>
+        {
+            WebsocketStatusText.text = "WS: Connected";
+            WebsocketStatusText.color = Color.green;
+        });
+        
+        socketClient.Send(new byte[1] { (byte)MessageEnum.FullImage_Request });
+        socketClient.Send(new byte[1] { (byte)MessageEnum.GetUsers_Request });
+        socketClient.Send(new byte[1] { (byte)MessageEnum.TotalChunksAvailable_Request });
+        socketClient.Send(new byte[1] { (byte)MessageEnum.TotalPixelCount_Request });
     }
 
     // Update is called once per frame
     void Update()
     {
+        bool connected = socketClient != null && socketClient.IsConnected;
 
+        if (!connected || !socketClient.HasEnqueuedPackages())
+        {
+            return;
+        }
+
+        string messages = $"Messages received at frame {Time.frameCount}:\n";
+        while (socketClient.HasEnqueuedPackages())
+        {
+            int length = socketClient.GetNextPackage(ref buffer);
+            var message = Encoding.UTF8.GetString(buffer, 0, length);
+
+
+            try
+            {
+                MessageCount++;
+
+                //MainThreadWorker.Instance.AddAction(() =>
+                //{
+                    WebsocketStatusText.text = $"WS: OK ({MessageCount.ToString("N0")})";
+                    WebsocketStatusText.color = Color.green;
+                //});
+
+
+                MessageEnum messageType = (MessageEnum)buffer[0];
+
+
+                switch (messageType)
+                {
+                    case MessageEnum.FullImage_Response:
+                        ProcessFullImage(buffer);
+                        break;
+                    case MessageEnum.LivePixel:
+                        ProcessLivePixel(buffer);
+                        break;
+                    case MessageEnum.TotalPixelCount_Response:
+                        // total pixels is int32 (4 bytes)
+                        // TODO move to method
+                        int totalPixels = BitConverter.ToInt32(buffer.Skip(1).ToArray(), 0);
+
+                        TotalPixels = totalPixels;
+
+                        break;
+                    case MessageEnum.TotalChunksAvailable_Response:
+                        // total chunks is int16 (2 bytes)
+                        // TODO move to method
+
+                        short totalChunks = BitConverter.ToInt16(buffer.Skip(1).ToArray(), 0);
+
+                        TotalChunks = totalChunks;
+
+                        break;
+                    case MessageEnum.GetChunk_Response:
+                        ProcessChunk(buffer);
+                        break;
+                    case MessageEnum.GetUsers_Response:
+                        ProcessUsers(buffer);
+                        break;
+
+                    case MessageEnum.GetUserProfileImage_Response:
+                        ProcessUserImage(buffer);
+                        break;
+
+                    case MessageEnum.FullImage_Request:
+                    case MessageEnum.TotalPixelCount_Request:
+                    case MessageEnum.GetChunk_Request:
+                    case MessageEnum.TotalChunksAvailable_Request:
+                    case MessageEnum.GetUsers_Request:
+                    case MessageEnum.GetUserProfileImage_Request:
+                        // yea i may have broken something :/
+                        break;
+                    default:
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError("Error on message: " + ex.Message);
+            }
+        }
     }
 
     private bool LiveMode = true;
@@ -559,7 +807,7 @@ public class WebSocketDemo : MonoBehaviour
             LoadChunks.gameObject.SetActive(false);
             LoadingChunks = false; // cance chunk loading
             LiveMode = true;
-            WS.Send(new byte[1] { (byte)MessageEnum.FullImage_Request });
+            socketClient.Send(new byte[1] { (byte)MessageEnum.FullImage_Request });
             // send new WS request to reload the image
         }
         else if (value == 1)
@@ -605,7 +853,7 @@ public class WebSocketDemo : MonoBehaviour
                     request[1] = 1; // first chunk
                     request[2] = 0;
 
-                    WS.Send(request);
+                    socketClient.Send(request);
                 }
             }
             else if (buttonId == 1)
@@ -616,7 +864,7 @@ public class WebSocketDemo : MonoBehaviour
             {
                 ReconnectButton.gameObject.SetActive(false);
 
-                WS.Connect();
+                socketClient.Connect();
             }
         }
         catch (Exception ex)
