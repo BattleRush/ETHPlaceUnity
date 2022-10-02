@@ -398,9 +398,9 @@ public class WebSocketDemo : MonoBehaviour
         // Create WebSocket instance
 
 
-        WS = WebSocketFactory.CreateInstance("wss://websocket.battlerush.dev:9000/place");
+        WS = WebSocketFactory.CreateInstance("wss://ws.battlerush.dev/");
         //WS = WebSocketFactory.CreateInstance("ws://52.142.4.222:9000/place"); // TODO config
-        //WS = WebSocketFactory.CreateInstance("ws://127.0.0.1:9000/place");
+        //WS = WebSocketFactory.CreateInstance("ws://localhost:9000/");
         //WS = ws;
 
         // Add OnOpen event listener

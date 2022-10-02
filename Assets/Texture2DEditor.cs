@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -19,8 +20,15 @@ public class Texture2DEditor : MonoBehaviour
         texture = material.mainTexture as Texture2D;
         t2D = new Texture2D(1000, 1000);
         t2D.filterMode = FilterMode.Point;
-        t2D.SetPixels32(texture.GetPixels32());
-        t2D.Apply();
+        try
+        {
+            t2D.SetPixels32(texture.GetPixels32());
+        }
+        catch (Exception ex)
+        {
+
+        }
+            t2D.Apply();
 
         material.mainTexture = t2D;
         var pixelData = t2D.GetPixels32();
