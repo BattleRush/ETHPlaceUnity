@@ -230,7 +230,7 @@ public class CubeHandler : MonoBehaviour
             {
                 if (!collision.gameObject.name.StartsWith("SpawnCube("))
                 {
-                    Debug.Log(collision.gameObject.name);
+                    //Debug.Log(collision.gameObject.name);
                 }
 
                 if ((explosionOnPlace && collision.gameObject.name == "Plane")

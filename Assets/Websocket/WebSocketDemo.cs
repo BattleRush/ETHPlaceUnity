@@ -98,6 +98,20 @@ public class WebSocketDemo : MonoBehaviour
                     handler.Image = user?.Image ?? new byte[0];
                     handler.IsBot = user?.IsBot == true;
 
+
+                    if (user.Image == null && user.AvatarUrl.Length > 0)
+                    {
+                        byte[] userIdBytes = BitConverter.GetBytes(user.UserId);
+                        var request = new byte[3];
+                        request[0] = (byte)MessageEnum.GetUserProfileImage_Request;
+                        request[1] = userIdBytes[0];
+                        request[2] = userIdBytes[1];
+
+                        socketClient.SendAsync(request);
+
+                        Debug.Log("Retreived again image for: " + user.Username);
+                    }
+
                     instObj.GetComponent<MeshRenderer>().material.color = col;
                     instObj.AddComponent<AudioSource>();
                     var colider = instObj.GetComponent<Collider>();
@@ -113,14 +127,14 @@ public class WebSocketDemo : MonoBehaviour
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogError("Error ProcessLivePixel MainThreadWorker: " + ex.Message);
+                    //Debug.LogError("Error ProcessLivePixel MainThreadWorker: " + ex.Message);
 
                 }
             });
         }
         catch (Exception ex)
         {
-            Debug.LogError("Error ProcessLivePixel: " + ex.Message);
+            //Debug.LogError("Error ProcessLivePixel: " + ex.Message);
 
         }
     }
@@ -144,6 +158,8 @@ public class WebSocketDemo : MonoBehaviour
                 {
                     for (int x = 0; x < size; x++)
                     {
+                        if (data.Length < index + 3)
+                            break;
                         var randColor = new Color32(data[index], data[index + 1], data[index + 2], 0);
                         index += 3;
                         tex.SetPixel(999 - x, y, randColor);
@@ -216,7 +232,7 @@ public class WebSocketDemo : MonoBehaviour
                         request[1] = userIdBytes[0];
                         request[2] = userIdBytes[1];
 
-                        socketClient.Send(request);
+                        socketClient.SendAsync(request);
                     }
                     else
                     {
@@ -349,7 +365,7 @@ public class WebSocketDemo : MonoBehaviour
                     request[1] = newChunkIdBytes[0];
                     request[2] = newChunkIdBytes[1];
 
-                    socketClient.Send(request);
+                    socketClient.SendAsync(request);
                 }
                 catch (Exception ex)
                 {
@@ -412,11 +428,14 @@ public class WebSocketDemo : MonoBehaviour
                 socketClient = null;
             }
 
-            var context = new SslContext(SslProtocols.Tls12);
-
+            //var context = new SslContext(SslProtocols.Tls12);
             //socketClient = new UnitySslClient(context, "websocket.battlerush.dev", 9000);
             //socketClient = new UnitySslClient(context, "192.33.91.140", 9000);
-            socketClient = new UnityTcpClient("127.0.0.1", 9000);
+            IPAddress ipAddress = Dns.GetHostEntry("place.battlerush.dev").AddressList[1];
+
+            //socketClient = new UnityTcpClient("127.0.0.1", 9000);
+            socketClient = new UnityTcpClient(ipAddress.ToString(), 9000);
+            socketClient.OptionReceiveBufferSize = 4_000_000;
             buffer = new byte[socketClient.OptionReceiveBufferSize];
 
             socketClient.OnConnectedEvent += SocketClient_OnConnectedEvent;
@@ -425,7 +444,7 @@ public class WebSocketDemo : MonoBehaviour
             socketClient.Connect();
 
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
 
         }
@@ -437,7 +456,7 @@ public class WebSocketDemo : MonoBehaviour
 
 
 
-        
+
 
 
 
@@ -638,19 +657,19 @@ public class WebSocketDemo : MonoBehaviour
 
 
         // Add OnClose event listener
-       /* WS.OnClose += (WebSocketCloseCode code) =>
-        {
-            MainThreadWorker.Instance.AddAction(() =>
-            {
-                WebsocketStatusText.text = $"WS: Disconnected ({code.ToString()})";
-                WebsocketStatusText.color = Color.red;
-                ReconnectButton.gameObject.SetActive(true);
-            });
-            Debug.Log("WS closed with code: " + code.ToString());
-        };
+        /* WS.OnClose += (WebSocketCloseCode code) =>
+         {
+             MainThreadWorker.Instance.AddAction(() =>
+             {
+                 WebsocketStatusText.text = $"WS: Disconnected ({code.ToString()})";
+                 WebsocketStatusText.color = Color.red;
+                 ReconnectButton.gameObject.SetActive(true);
+             });
+             Debug.Log("WS closed with code: " + code.ToString());
+         };
 
-        // Connect to the server
-        WS.Connect();*/
+         // Connect to the server
+         WS.Connect();*/
     }
     /*public override void OnWsConnecting(HttpRequest request)
     {
@@ -701,11 +720,11 @@ public class WebSocketDemo : MonoBehaviour
             WebsocketStatusText.text = "WS: Connected";
             WebsocketStatusText.color = Color.green;
         });
-        
-        socketClient.Send(new byte[1] { (byte)MessageEnum.FullImage_Request });
-        socketClient.Send(new byte[1] { (byte)MessageEnum.GetUsers_Request });
-        socketClient.Send(new byte[1] { (byte)MessageEnum.TotalChunksAvailable_Request });
-        socketClient.Send(new byte[1] { (byte)MessageEnum.TotalPixelCount_Request });
+
+        socketClient.SendAsync(new byte[1] { (byte)MessageEnum.FullImage_Request });
+        socketClient.SendAsync(new byte[1] { (byte)MessageEnum.GetUsers_Request });
+        socketClient.SendAsync(new byte[1] { (byte)MessageEnum.TotalChunksAvailable_Request });
+        socketClient.SendAsync(new byte[1] { (byte)MessageEnum.TotalPixelCount_Request });
     }
 
     // Update is called once per frame
@@ -722,35 +741,37 @@ public class WebSocketDemo : MonoBehaviour
         while (socketClient.HasEnqueuedPackages())
         {
             int length = socketClient.GetNextPackage(ref buffer);
-            var message = Encoding.UTF8.GetString(buffer, 0, length);
+            //var message = Encoding.UTF8.GetString(buffer, 0, length);
 
+            var data = buffer.Take(length).ToArray();
 
+            Debug.Log($"[{MessageCount}] with len {data.Length}");
             try
             {
                 MessageCount++;
 
                 //MainThreadWorker.Instance.AddAction(() =>
                 //{
-                    WebsocketStatusText.text = $"WS: OK ({MessageCount.ToString("N0")})";
-                    WebsocketStatusText.color = Color.green;
+                WebsocketStatusText.text = $"WS: OK ({MessageCount.ToString("N0")})";
+                WebsocketStatusText.color = Color.green;
                 //});
 
 
-                MessageEnum messageType = (MessageEnum)buffer[0];
+                MessageEnum messageType = (MessageEnum)data[0];
 
 
                 switch (messageType)
                 {
                     case MessageEnum.FullImage_Response:
-                        ProcessFullImage(buffer);
+                        ProcessFullImage(data);
                         break;
                     case MessageEnum.LivePixel:
-                        ProcessLivePixel(buffer);
+                        ProcessLivePixel(data);
                         break;
                     case MessageEnum.TotalPixelCount_Response:
                         // total pixels is int32 (4 bytes)
                         // TODO move to method
-                        int totalPixels = BitConverter.ToInt32(buffer.Skip(1).ToArray(), 0);
+                        int totalPixels = BitConverter.ToInt32(data.Skip(1).ToArray(), 0);
 
                         TotalPixels = totalPixels;
 
@@ -759,20 +780,20 @@ public class WebSocketDemo : MonoBehaviour
                         // total chunks is int16 (2 bytes)
                         // TODO move to method
 
-                        short totalChunks = BitConverter.ToInt16(buffer.Skip(1).ToArray(), 0);
+                        short totalChunks = BitConverter.ToInt16(data.Skip(1).ToArray(), 0);
 
                         TotalChunks = totalChunks;
 
                         break;
                     case MessageEnum.GetChunk_Response:
-                        ProcessChunk(buffer);
+                        ProcessChunk(data);
                         break;
                     case MessageEnum.GetUsers_Response:
-                        ProcessUsers(buffer);
+                        ProcessUsers(data);
                         break;
 
                     case MessageEnum.GetUserProfileImage_Response:
-                        ProcessUserImage(buffer);
+                        ProcessUserImage(data);
                         break;
 
                     case MessageEnum.FullImage_Request:
@@ -789,7 +810,7 @@ public class WebSocketDemo : MonoBehaviour
             }
             catch (Exception ex)
             {
-                Debug.LogError("Error on message: " + ex.Message);
+                Debug.LogError($"[{data.Length}]Error on message: " + ex.Message);
             }
         }
     }
@@ -807,7 +828,7 @@ public class WebSocketDemo : MonoBehaviour
             LoadChunks.gameObject.SetActive(false);
             LoadingChunks = false; // cance chunk loading
             LiveMode = true;
-            socketClient.Send(new byte[1] { (byte)MessageEnum.FullImage_Request });
+            socketClient.SendAsync(new byte[1] { (byte)MessageEnum.FullImage_Request });
             // send new WS request to reload the image
         }
         else if (value == 1)
@@ -853,7 +874,7 @@ public class WebSocketDemo : MonoBehaviour
                     request[1] = 1; // first chunk
                     request[2] = 0;
 
-                    socketClient.Send(request);
+                    socketClient.SendAsync(request);
                 }
             }
             else if (buttonId == 1)
