@@ -61,3 +61,12 @@ jobs:
           username: ${{ secrets.REMOTE_USER }}
           privateKey: ${{ secrets.REMOTE_SSH_KEY }}
           passphrase: ${{ secrets.REMOTE_SSH_PASSPHRASE }}
+          
+      - name: Fix broken webgl build
+        uses: garygrossgarten/github-action-ssh@release
+        with:
+          command: sudo python3 /var/www/placeweb/Build/fixbuild.py
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          passphrase: ${{ secrets.REMOTE_SSH_PASSPHRASE }}
+          privateKey: ${{ secrets.REMOTE_SSH_KEY }}
