@@ -397,7 +397,7 @@ public class WebSocketDemo : MonoBehaviour
 
         // Create WebSocket instance
 
-
+        //https://stackoverflow.com/questions/70411564/unity-webgl-throws-error-referenceerror-runtime-is-not-defined
         WS = WebSocketFactory.CreateInstance("wss://ws.battlerush.dev/");
         //WS = WebSocketFactory.CreateInstance("ws://52.142.4.222:9000/place"); // TODO config
         //WS = WebSocketFactory.CreateInstance("ws://localhost:9000/");
